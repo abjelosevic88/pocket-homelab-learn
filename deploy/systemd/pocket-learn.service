@@ -1,0 +1,23 @@
+[Unit]
+Description=Pocket Learn — breathe, sit, notice
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pocket-learn
+Group=pocket-learn
+ExecStart=/usr/local/bin/pocket-learn
+Environment=DATA_DIR=/var/lib/pocket-learn
+Environment=PORT=8080
+Environment=BASE_URL=https://learn.example.com
+Environment=SECURE_COOKIES=true
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/pocket-learn
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

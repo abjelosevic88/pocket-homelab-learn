@@ -1,0 +1,9 @@
+# Pocket Learn behind Caddy. Homepage widgets and linked apps send their own
+# bearer token to /api/*.
+learn.example.com {
+	# Anki packages with their pictures can be large
+	request_body {
+		max_size 1GB
+	}
+	reverse_proxy pocket-learn:8080
+}

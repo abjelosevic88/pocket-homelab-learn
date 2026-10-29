@@ -1,0 +1,31 @@
+# Pocket Learn — flashcards with spaced repetition (Go + SQLite). One container, one volume.
+services:
+  pocket-learn:
+    image: ghcr.io/abjelosevic88/pocket-homelab-learn:latest
+    container_name: pocket-learn
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      TZ: ${TZ:-Europe/Berlin}
+      BASE_URL: ${BASE_URL:-http://localhost:8080}
+      # SECURE_COOKIES: "true"          # behind HTTPS
+      # First admin (only used while the database has no users):
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # The owner's own connections; everything can also be set under Settings.
+      READER_URL: ${READER_URL:-}
+      READER_TOKEN: ${READER_TOKEN:-}
+      LIBRARY_URL: ${LIBRARY_URL:-}
+      LIBRARY_TOKEN: ${LIBRARY_TOKEN:-}
+      NOTES_URL: ${NOTES_URL:-}
+      NOTES_TOKEN: ${NOTES_TOKEN:-}
+      NOTIFY_URL: ${NOTIFY_URL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # Pocket Core: one sign-in and app links instead of tokens.
+      # CORE_URL: http://pocket-core:8080
+      # CORE_REGISTRATION_KEY: ${CORE_REGISTRATION_KEY}
+    volumes:
+      - ./data:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
