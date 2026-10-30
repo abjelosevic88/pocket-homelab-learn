@@ -85,6 +85,18 @@ func (s *Server) Router() http.Handler {
 			r.Post("/study/answer", s.handleAnswer)
 			r.Post("/study/undo", s.handleUndo)
 			r.Post("/study/finish", s.handleFinish)
+			r.Post("/study/start", s.handleStudyStart)
+			r.Post("/study/stop", s.handleStudyStop)
+
+			// the shared timer in Pocket Time
+			r.Get("/time/timer", s.handleTimeTimer)
+			r.Post("/time/timer/stop", s.handleTimeStop)
+
+			// the worklog Pocket Time reads and writes (docs/worklog.md there)
+			r.Get("/worklog", s.handleWorklog)
+			r.Get("/worklog/items", s.handleWorklogItems)
+			r.Post("/worklog", s.handleWorklogLog)
+			r.Delete("/worklog/{id}", s.handleWorklogDelete)
 
 			// pictures and sounds
 			r.Post("/media", s.handleUploadMedia)

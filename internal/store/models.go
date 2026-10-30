@@ -214,6 +214,12 @@ type Settings struct {
 	NotesToken     string `json:"notes_token"`
 	NotesPublicURL string `json:"notes_public_url"`
 
+	// Pocket Time: the study timer is the person's one timer there.
+	TimeMode      string `json:"time_mode"`
+	TimeURL       string `json:"time_url"`
+	TimeToken     string `json:"time_token"`
+	TimePublicURL string `json:"time_public_url"`
+
 	// AI for making cards and explaining them: Pocket AI through Core, or an
 	// OpenAI-compatible API with the person's own key.
 	AIProvider    string `json:"ai_provider"` // auto | pocket | openai

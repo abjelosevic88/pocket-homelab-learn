@@ -16,7 +16,7 @@ type TabId = 'study' | 'reminders' | 'apps' | 'ai' | 'profile' | 'people' | 'tok
 const TABS: { id: TabId; label: string; icon: string; sub: string }[] = [
   { id: 'study', label: 'Studying', icon: 'brain', sub: 'How sure you want to be to remember, how many cards a day, the learning steps and the study screen.' },
   { id: 'reminders', label: 'Reminders', icon: 'bell', sub: 'A nudge when cards are due, your streak in the evening and the weekly report.' },
-  { id: 'apps', label: 'Connected apps', icon: 'layers', sub: 'Pocket Reader and Pocket Library (your highlights become cards) and Pocket Notes (make cards from a note).' },
+  { id: 'apps', label: 'Connected apps', icon: 'layers', sub: 'Pocket Reader and Pocket Library (your highlights become cards), Pocket Notes (make cards from a note) and Pocket Time (your study timer).' },
   { id: 'ai', label: 'AI', icon: 'sparkles', sub: 'Who writes cards from your texts and explains them: Pocket AI through Core, or your own OpenAI key.' },
   { id: 'profile', label: 'Profile', icon: 'user', sub: 'Your name, email and password.' },
   { id: 'people', label: 'People', icon: 'users', sub: 'Everyone who has an account on this box.' },
@@ -205,10 +205,11 @@ function Reminders() {
   )
 }
 
-const APPS: { slug: 'reader' | 'library' | 'notes'; name: string; icon: string; sub: string; port: number; where: string }[] = [
+const APPS: { slug: 'reader' | 'library' | 'notes' | 'time'; name: string; icon: string; sub: string; port: number; where: string }[] = [
   { slug: 'reader', name: 'Pocket Reader — your highlights in articles', icon: 'rss', sub: 'The passages you highlight while reading become cards: as they are, or as questions the AI writes about them (Make cards → Reader highlights).', port: 8211, where: 'Pocket Reader → Settings → API & shortcuts' },
   { slug: 'library', name: 'Pocket Library — your highlights in books', icon: 'journal', sub: 'Highlights and notes you made in your books (in the browser or on KOReader) become cards.', port: 8204, where: 'Pocket Library → Settings → API & shortcuts' },
   { slug: 'notes', name: 'Pocket Notes — make cards from a note', icon: 'note', sub: 'Pick one of your notes and the AI writes cards from it.', port: 8182, where: 'Pocket Notes → Settings → API & shortcuts' },
+  { slug: 'time', name: 'Pocket Time — your study timer', icon: 'timer', sub: 'Studying starts your one timer in Pocket Time, and finishing stops it: start in Learn and it runs there, stop it in either place and both stop. Pocket Time then keeps the time and writes it back here as a study session. If another timer is running, Learn asks before switching. Off: Learn times your sessions on its own.', port: 8219, where: 'Pocket Time → Settings → API & shortcuts' },
 ]
 
 function Integrations() {
@@ -219,7 +220,7 @@ function Integrations() {
   const eff = (m: ConnMode): ConnMode => !coreOn && m === 'core' ? 'off' : m
   return (
     <div className="stack loose">
-      <div className="callout info"><Icon name="info" size={15} /><div>These connections are yours. Through <b>Pocket Core</b> Learn reads your highlights and notes as you, with nothing to paste (switch it off for yourself in Pocket Core → Settings → Apps acting for me); <b>Direct</b> uses a URL and an API token you enter. Learn only reads from these apps; it never changes anything there.{!coreOn && <CoreHint />}</div></div>
+      <div className="callout info"><Icon name="info" size={15} /><div>These connections are yours. Through <b>Pocket Core</b> Learn reaches these apps as you, with nothing to paste (switch it off for yourself in Pocket Core → Settings → Apps acting for me); <b>Direct</b> uses a URL and an API token you enter. Learn only reads from Reader, Library and Notes; in Pocket Time it only starts and stops your timer.{!coreOn && <CoreHint />}</div></div>
       {APPS.map(a => (
         <Section key={a.slug} title={a.name} icon={a.icon} actions={connBadge(eff(f[`${a.slug}_mode`]), f[`${a.slug}_via`])} sub={a.sub}>
           <Connection app={a.name.split(' — ')[0]} mode={f[`${a.slug}_mode`]} via={f[`${a.slug}_via`]} detail={f[`${a.slug}_detail`]} core={coreOn} hasToken={!!f[`${a.slug}_token`]}
@@ -231,10 +232,12 @@ function Integrations() {
             </div>} />
         </Section>
       ))}
-      <Section title="Other Pocket apps" icon="layers" sub="Learn offers your studying to the rest of the box through Pocket Core: Pocket Day writes what you studied into your journal, a dashboard shows what is due, another app can add a card (a word from a note, a passage you highlighted).">
+      <Section title="Other Pocket apps" icon="layers" sub="Learn offers your studying to the rest of the box through Pocket Core: Pocket Day writes what you studied into your journal, a dashboard shows what is due, another app can add a card (a word from a note, a passage you highlighted), Pocket Time shows your study sessions with the rest of your time.">
         <dl className="set-dl">
           <div><dt>learn:read</dt><dd className="muted">Decks, cards due, what you studied each day, your streak — never the cards themselves.</dd></div>
           <div><dt>learn:write</dt><dd className="muted">Add cards; an app can change or remove only the cards it added itself.</dd></div>
+          <div><dt>worklog:read</dt><dd className="muted">Your study sessions — which deck, when, how long — for Pocket Time. Never the cards.</dd></div>
+          <div><dt>worklog:write</dt><dd className="muted">Log study time for a deck (Pocket Time writes back a timer you stopped there); it can change or remove only the sessions it logged.</dd></div>
         </dl>
       </Section>
       <div className="row"><button type="button" className="btn primary" onClick={() => save()} disabled={busy}>Save changes</button></div>
@@ -287,7 +290,7 @@ function Connection({ app, mode: saved, via, detail, core, onMode, onDisconnect,
   const mode: ConnMode = !core && saved === 'core' ? 'off' : saved
   const ok = via !== '' && mode !== 'off'
   const showDirect = !core || mode === 'direct' || advanced
-  const line = mode === 'off' ? `Off: Learn does not read from ${app}.`
+  const line = mode === 'off' ? (app === 'Pocket Time' ? 'Off: Learn times your study sessions on its own.' : `Off: Learn does not read from ${app}.`)
     : mode === 'core' ? (ok ? `Connected through Pocket Core, as you${detail ? ` (${detail})` : ''}. Nothing to fill in; switch it off for yourself in Pocket Core → Settings → Apps acting for me.` : `Not connected: ${detail}.`)
     : (ok ? `Direct connection with your own ${app} URL and token; use Test connection to check it.` : `Not connected: ${detail || 'add the URL and a token'}.`)
   return (

@@ -166,10 +166,61 @@ func (s *Server) seedDemo(ctx context.Context, owner int64) error {
 	if err := s.store.RestoreState(ctx, owner, cards, reviews); err != nil {
 		return err
 	}
+	s.seedDemoSessions(ctx, owner, reviews)
 	if st.NotifyURL == "" {
 		st.ReminderTime = "19:00"
 		_ = s.store.SaveUserSettings(ctx, owner, st)
 	}
 	s.log.Info("demo data seeded", "cards", len(cards), "reviews", len(reviews))
 	return s.store.CachePut(ctx, key, "1")
+}
+
+// seedDemoSessions makes the study sessions the demo answers came from:
+// answers with no gap over 15 minutes are one session (of one deck, or of
+// all decks when they were mixed); every fourth was timed in Pocket Time.
+func (s *Server) seedDemoSessions(ctx context.Context, owner int64, reviews []store.Review) {
+	decks, _ := s.store.ListDecks(ctx, owner, true)
+	names := map[int64]string{}
+	for _, d := range decks {
+		names[d.ID] = d.Name
+	}
+	var cur *store.StudySession
+	var last time.Time
+	var spent time.Duration // the demo's answers are spread out: a session lasts what its cards took
+	n := 0
+	flush := func() {
+		if cur == nil {
+			return
+		}
+		start, _ := store.ParseStamp(cur.StartedAt)
+		end := start.Add(spent + time.Duration(cur.Cards)*4*time.Second)
+		cur.EndedAt, cur.LastAt, cur.DurationS = store.Stamp(end), store.Stamp(end), int(end.Sub(start).Seconds())
+		spent = 0
+		if n%4 == 3 {
+			cur.Source, cur.ExternalID = "time", fmt.Sprintf("time:%d", 9000+n)
+		}
+		_ = s.store.CreateStudySession(ctx, owner, cur)
+		n++
+		cur = nil
+	}
+	for _, r := range reviews {
+		t := store.ParseTS(r.ReviewedAt)
+		if cur != nil && t.Sub(last) > sessionIdle {
+			flush()
+		}
+		if cur == nil {
+			id := r.DeckID
+			start := t.Add(-time.Duration(r.DurationMS) * time.Millisecond)
+			cur = &store.StudySession{DeckID: &id, DeckName: names[id], StartedAt: store.Stamp(start), Date: store.LocalDate(start), Source: "app"}
+		} else if cur.DeckID != nil && *cur.DeckID != r.DeckID {
+			cur.DeckID, cur.DeckName = nil, ""
+		}
+		cur.Cards++
+		if r.Rating == 1 {
+			cur.Again++
+		}
+		spent += time.Duration(r.DurationMS) * time.Millisecond
+		last = t
+	}
+	flush()
 }

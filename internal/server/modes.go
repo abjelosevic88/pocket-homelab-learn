@@ -11,7 +11,7 @@ import (
 //
 // Core can switch its own links but cannot see a URL and token pasted into
 // Learn, so Learn tells it how each person actually connects to
-// Pocket Reader, Library and Notes: "core", "direct" or "off", the mode in effect
+// Pocket Reader, Library, Notes and Time: "core", "direct" or "off", the mode in effect
 // (what Settings shows, defaults included). Reported after each registration
 // (on start and every 30 minutes) and right after a person changes a mode or
 // disconnects; one batched call for everybody. Report only: failures are
@@ -75,4 +75,4 @@ func (s *Server) reportModesSoon() {
 
 // modeKeys are the settings that can change a person's effective mode: the
 // mode itself, and the token (a saved token makes the default direct).
-var modeKeys = []string{"reader_mode", "reader_token", "library_mode", "library_token", "notes_mode", "notes_token"}
+var modeKeys = []string{"reader_mode", "reader_token", "library_mode", "library_token", "notes_mode", "notes_token", "time_mode", "time_token"}

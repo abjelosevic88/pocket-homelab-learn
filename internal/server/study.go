@@ -342,7 +342,8 @@ func (s *Server) handleAnswer(w http.ResponseWriter, r *http.Request) {
 		CardID     int64 `json:"card_id"`
 		Rating     int   `json:"rating"`
 		DurationMS int   `json:"duration_ms"`
-		Deck       int64 `json:"deck"` // the scope of the session, for the next card
+		Deck       int64 `json:"deck"`       // the scope of the session, for the next card
+		SessionID  int64 `json:"session_id"` // the study session it counts in (0 = none)
 	}
 	if err := decode(r, &in); err != nil || in.Rating < 1 || in.Rating > 4 {
 		writeErr(w, http.StatusBadRequest, "rating is 1 (again) to 4 (easy)")
@@ -361,7 +362,8 @@ func (s *Server) handleAnswer(w http.ResponseWriter, r *http.Request) {
 	if res.Card == nil && res.ComeBack == "" && in.Deck == 0 {
 		s.allDone(ctx, uid)
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"review_id": rev.ID, "card": card, "next": res})
+	sess := s.touchSession(ctx, uid, in.SessionID, in.Rating)
+	writeJSON(w, http.StatusOK, map[string]any{"review_id": rev.ID, "card": card, "next": res, "session": s.sessionView(sess)})
 }
 
 // answer applies a rating to one of the person's cards.
@@ -417,8 +419,9 @@ func (s *Server) handleUndo(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	uid := actorID(ctx)
 	var in struct {
-		ReviewID int64 `json:"review_id"`
-		Deck     int64 `json:"deck"`
+		ReviewID  int64 `json:"review_id"`
+		Deck      int64 `json:"deck"`
+		SessionID int64 `json:"session_id"`
 	}
 	if err := decode(r, &in); err != nil || in.ReviewID == 0 {
 		writeErr(w, http.StatusBadRequest, "review_id is required")
@@ -433,6 +436,7 @@ func (s *Server) handleUndo(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, err, "undo")
 		return
 	}
+	s.untouchSession(ctx, uid, in.SessionID)
 	res, err := s.next(ctx, uid, in.Deck, nil)
 	if err != nil {
 		s.fail(w, err, "next card")
@@ -446,7 +450,8 @@ func (s *Server) handleUndo(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, res)
 }
 
-// handleFinish ends a session: it is published (Pocket Day, Flows) and returns a summary.
+// handleFinish ends a session: its run ends (and the timer in Pocket Time
+// stops), it is published (Pocket Day, Flows) and returns a summary.
 func (s *Server) handleFinish(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	uid := actorID(ctx)
@@ -455,8 +460,10 @@ func (s *Server) handleFinish(w http.ResponseWriter, r *http.Request) {
 		Cards      int   `json:"cards"`
 		Again      int   `json:"again"`
 		DurationMS int   `json:"duration_ms"`
+		SessionID  int64 `json:"session_id"`
 	}
 	_ = decode(r, &in)
+	sess, detail := s.endRun(ctx, uid, in.SessionID)
 	if in.Cards > 0 {
 		deck := "all decks"
 		if in.Deck > 0 {
@@ -469,7 +476,7 @@ func (s *Server) handleFinish(w http.ResponseWriter, r *http.Request) {
 	}
 	st, _ := s.store.GetSettings(ctx, uid)
 	cur, best := s.streaks(ctx, uid, st)
-	writeJSON(w, http.StatusOK, map[string]any{"streak": cur, "longest_streak": best})
+	writeJSON(w, http.StatusOK, map[string]any{"streak": cur, "longest_streak": best, "session": s.sessionView(sess), "detail": detail})
 }
 
 // allDone publishes once a day that everything due today is studied.

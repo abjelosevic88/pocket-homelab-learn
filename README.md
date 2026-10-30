@@ -52,6 +52,7 @@
 - **Study anywhere**: a calm, full-screen study screen with the keyboard (space, 1–4, z to undo, e to edit) or big buttons on the phone; bury a card until tomorrow, set it aside, flag it, ask the AI to explain it.
 - **Bring your cards**: Anki `.apkg`/`.colpkg` (decks, cloze and reversed cards, tags, pictures, sounds, and your progress so known cards stay known), CSV/TSV from Quizlet or a spreadsheet with a column preview, and a full JSON export/import.
 - **Cards made by AI**: paste a text, pick a note from Pocket Notes or highlights from Pocket Reader and Pocket Library, and the AI writes clear one-fact cards; you pick and fix the ones to keep. Pocket AI through Pocket Core, or your own OpenAI-compatible key.
+- **Study sessions, timed**: every run on the study screen is a study session (deck, cards, how long). Connect Pocket Time and the study timer is your one timer there: start studying and it runs in Pocket Time, stop it in either place and both stop; if something else is being timed, Learn asks before switching.
 - **Statistics**: cards per day, a year heatmap, true retention for young and well-known cards against what you aim for, the next 30 days, intervals, your best time of day, the cards you forget most.
 - **Reminders**: a nudge when cards are due, an evening reminder before a streak ends, streak milestones and a weekly report through Apprise, ntfy or a webhook.
 - **Everyone their own**: each person has their own decks, cards, settings and connections; admins see no one else's.
@@ -68,7 +69,7 @@ or `docker compose up -d` with [docker-compose.yml](docker-compose.yml). Open it
 
 ## With Pocket Core
 
-Set `CORE_URL` and `CORE_REGISTRATION_KEY` and Learn joins the box: people sign in with Pocket Core, and through app links each person's own highlights (Pocket Reader, Pocket Library) and notes (Pocket Notes) can become cards with nothing to paste, written by Pocket AI. Other Pocket apps can read what you study (`learn:read`: decks, cards due, each day's studying and the streak — never the cards; Pocket Day's journal, dashboards) or add cards (`learn:write`: only changing what they added). Events on the bus: `learn.session_finished`, `learn.all_done`, `learn.cards_added`, `learn.streak_reached`. Without Core every connection can be made directly with a URL and a token; the Core-only choices stay visible, greyed out.
+Set `CORE_URL` and `CORE_REGISTRATION_KEY` and Learn joins the box: people sign in with Pocket Core, and through app links each person's own highlights (Pocket Reader, Pocket Library) and notes (Pocket Notes) can become cards with nothing to paste, written by Pocket AI. Other Pocket apps can read what you study (`learn:read`: decks, cards due, each day's studying and the streak — never the cards; Pocket Day's journal, dashboards) or add cards (`learn:write`: only changing what they added). With Pocket Time (`time:read`/`time:write`) the study timer is the person's one timer there, and Pocket Time sees and logs study sessions through Learn's worklog (`worklog:read`/`worklog:write`). Events on the bus: `learn.session_finished`, `learn.all_done`, `learn.cards_added`, `learn.streak_reached`. Without Core every connection can be made directly with a URL and a token; the Core-only choices stay visible, greyed out.
 
 ## Develop
 

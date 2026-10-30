@@ -229,6 +229,22 @@ func TestLinkScopes(t *testing.T) {
 	if !linkAllows(write, post("/api/v1/notes")) || !linkAllows(write, get("/api/v1/decks")) || linkAllows(write, get("/api/v1/stats")) || linkAllows(write, post("/api/v1/study/answer")) {
 		t.Fatal("learn:write adds cards and lists decks, nothing else")
 	}
+	del := func(p string) *http.Request { return httptest.NewRequest("DELETE", p, nil) }
+	wr, ww := []string{"worklog:read"}, []string{"worklog:write"}
+	if !linkAllows(wr, get("/api/v1/worklog")) || !linkAllows(wr, get("/api/v1/worklog/items")) || linkAllows(wr, post("/api/v1/worklog")) || linkAllows(wr, del("/api/v1/worklog/3")) {
+		t.Fatal("worklog:read reads the sessions and the decks to log for, nothing else")
+	}
+	if !linkAllows(ww, post("/api/v1/worklog")) || !linkAllows(ww, del("/api/v1/worklog/3")) || linkAllows(ww, get("/api/v1/worklog")) || linkAllows(ww, del("/api/v1/decks/3")) {
+		t.Fatal("worklog:write logs and removes time, nothing else")
+	}
+	for _, p := range []string{"/api/v1/study/start", "/api/v1/study/stop", "/api/v1/time/timer/stop"} {
+		if linkAllows(append(wr, ww...), post(p)) || linkAllows([]string{"learn:read", "learn:write"}, post(p)) {
+			t.Fatalf("no link may drive the study timer (%s)", p)
+		}
+	}
+	if linkAllows(append(wr, ww...), get("/api/v1/time/timer")) || linkAllows(read, get("/api/v1/worklog")) {
+		t.Fatal("the timer proxy is the person's own; learn:read is not the worklog")
+	}
 }
 
 func TestExportImportIsIdempotent(t *testing.T) {

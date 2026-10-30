@@ -197,3 +197,157 @@ func (c *Client) GetNote(ctx context.Context, id int64) (*Note, error) {
 	}
 	return &out, nil
 }
+
+// ---------------- Pocket Time ----------------
+//
+// The person's one timer (docs/worklog.md in pocket-homelab-time): Learn's
+// study timer starts and stops it; another one running answers 409 with it.
+
+// TimeEntry is a timer (or a finished entry) in Pocket Time.
+type TimeEntry struct {
+	ID          int64  `json:"id"`
+	Title       string `json:"title"`
+	StartedAt   string `json:"started_at"`
+	EndedAt     string `json:"ended_at"`
+	Date        string `json:"date"`
+	DurationS   int    `json:"duration_s"`
+	Running     bool   `json:"running"`
+	Source      string `json:"source"` // where it was started: "time", "manual", or an app slug
+	App         string `json:"app"`
+	AppRef      string `json:"app_ref"`
+	AppLabel    string `json:"app_label"`
+	AppURL      string `json:"app_url"`
+	ProjectName string `json:"project_name"`
+}
+
+// Name is what the entry is called: its title, else what it is for.
+func (e *TimeEntry) Name() string {
+	for _, s := range []string{e.Title, e.AppLabel, e.ProjectName} {
+		if strings.TrimSpace(s) != "" {
+			return s
+		}
+	}
+	return "untitled"
+}
+
+// TimerStart is what starts a timer for something in Learn. App names Learn
+// on a direct connection (a person's token); on a Core link Time takes the
+// acting app instead.
+type TimerStart struct {
+	App      string `json:"app"`
+	AppRef   string `json:"app_ref"`
+	AppLabel string `json:"app_label"`
+	AppURL   string `json:"app_url"`
+	Title    string `json:"title,omitempty"`
+	Deliver  bool   `json:"deliver"`
+	Switch   bool   `json:"switch,omitempty"`
+}
+
+// ConflictError is a 409 from Pocket Time: another timer is running.
+type ConflictError struct {
+	Msg     string
+	Running *TimeEntry
+}
+
+func (e *ConflictError) Error() string { return e.Msg }
+
+// doConflict sends a JSON request; a 409 becomes a *ConflictError.
+func (c *Client) doConflict(ctx context.Context, method, path string, body any, v any) error {
+	if !c.Configured() {
+		return errors.New("not configured")
+	}
+	b, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, method, c.BaseURL+path, bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	res, err := c.HTTP.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode == http.StatusConflict {
+		var out struct {
+			Error   string     `json:"error"`
+			Running *TimeEntry `json:"running"`
+		}
+		_ = json.NewDecoder(io.LimitReader(res.Body, 1<<20)).Decode(&out)
+		return &ConflictError{Msg: firstNonEmpty(out.Error, "a timer is already running"), Running: out.Running}
+	}
+	if res.StatusCode == http.StatusUnauthorized {
+		return errors.New("token rejected (401)")
+	}
+	if res.StatusCode >= 300 {
+		var e struct {
+			Error string `json:"error"`
+		}
+		rb, _ := io.ReadAll(io.LimitReader(res.Body, 2000))
+		_ = json.Unmarshal(rb, &e)
+		if e.Error != "" {
+			return fmt.Errorf("HTTP %d: %s", res.StatusCode, e.Error)
+		}
+		return fmt.Errorf("HTTP %d", res.StatusCode)
+	}
+	if v == nil {
+		return nil
+	}
+	return json.NewDecoder(res.Body).Decode(v)
+}
+
+func firstNonEmpty(a, b string) string {
+	if a != "" {
+		return a
+	}
+	return b
+}
+
+// Timer is the person's running timer in Pocket Time (nil = none).
+func (c *Client) Timer(ctx context.Context) (*TimeEntry, error) {
+	var out struct {
+		Running *TimeEntry `json:"running"`
+	}
+	if err := c.do(ctx, http.MethodGet, "/api/v1/timer", nil, nil, &out); err != nil {
+		return nil, err
+	}
+	return out.Running, nil
+}
+
+// StartTimer starts the person's timer. Another one running → *ConflictError
+// (unless in.Switch, which stops that one at this start).
+func (c *Client) StartTimer(ctx context.Context, in TimerStart) (*TimeEntry, error) {
+	var out struct {
+		Running *TimeEntry `json:"running"`
+	}
+	if err := c.doConflict(ctx, http.MethodPost, "/api/v1/timer/start", in, &out); err != nil {
+		return nil, err
+	}
+	if out.Running == nil {
+		return nil, errors.New("Pocket Time started no timer")
+	}
+	return out.Running, nil
+}
+
+// StopTimer stops the timer onlyIf it is that entry (0 = whatever runs),
+// at endedAt ("" = now). A different one running → *ConflictError.
+func (c *Client) StopTimer(ctx context.Context, onlyIf int64, endedAt string) (*TimeEntry, error) {
+	body := map[string]any{}
+	if onlyIf > 0 {
+		body["only_if"] = onlyIf
+	}
+	if endedAt != "" {
+		body["ended_at"] = endedAt
+	}
+	var out struct {
+		Stopped *TimeEntry `json:"stopped"`
+	}
+	if err := c.doConflict(ctx, http.MethodPost, "/api/v1/timer/stop", body, &out); err != nil {
+		return nil, err
+	}
+	return out.Stopped, nil
+}

@@ -440,3 +440,26 @@ td.col-back { background: color-mix(in srgb, var(--dc-review) 10%, transparent);
   .study-title { max-width: 28vw; }
   .page-head .sel { flex: 1 1 140px; }
 }
+
+/* ---- the study timer (Learn's own, or the one in Pocket Time) ---- */
+.run-pill { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.run-pill:hover { background: var(--surface-2); color: var(--text); }
+.run-pill.on { color: var(--text); min-width: 92px; justify-content: center; }
+.run-pill .run-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--danger); }
+.run-conflict { display: flex; justify-content: center; padding: 12px 18px 0; }
+.run-conflict .callout { max-width: 640px; width: 100%; }
+.time-pill { display: inline-flex; align-items: center; gap: 6px; height: 30px; max-width: 300px; padding: 0 4px 0 10px; margin-right: 4px; border-radius: 999px; background: var(--accent-soft); color: var(--text); font-size: 13px; }
+.time-pill-ico { color: var(--accent); flex-shrink: 0; }
+.time-pill-name { min-width: 0; color: inherit; text-decoration: none; font-weight: 500; }
+a.time-pill-name:hover { text-decoration: underline; }
+.time-pill-t { color: var(--text-2); white-space: nowrap; }
+.time-pill-stop { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; border: 0; background: var(--surface); color: var(--text); cursor: pointer; flex-shrink: 0; }
+.time-pill-stop:hover { background: var(--danger-soft); color: var(--danger); }
+@media (max-width: 767px) {
+  .time-pill { max-width: 150px; }
+  .time-pill-t { display: none; }
+  .run-pill.on { min-width: 0; }
+}
+.session-list .list-row { gap: 10px; }
+.session-list .ses-when { width: 120px; flex-shrink: 0; }
+@media (max-width: 767px) { .session-list .ses-when { width: 86px; } }

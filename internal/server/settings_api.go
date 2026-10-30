@@ -46,6 +46,7 @@ func (s *Server) publicSettings(ctx context.Context, u *store.User, st store.Set
 		"reader_url": st.ReaderURL, "reader_token": mask(st.ReaderToken), "reader_public_url": st.ReaderPublicURL,
 		"library_url": st.LibraryURL, "library_token": mask(st.LibraryToken), "library_public_url": st.LibraryPublicURL,
 		"notes_url": st.NotesURL, "notes_token": mask(st.NotesToken), "notes_public_url": st.NotesPublicURL,
+		"time_url": st.TimeURL, "time_token": mask(st.TimeToken), "time_public_url": st.TimePublicURL,
 		"ai_provider": st.AIProvider, "ai_pocket_model": st.AIPocketModel, "openai_api_key": mask(st.OpenAIKey), "openai_model": st.OpenAIModel, "openai_base_url": st.OpenAIBaseURL,
 		"setup_complete": st.SetupComplete, "base_url": s.cfg.BaseURL,
 	}
@@ -210,6 +211,9 @@ func (s *Server) handlePutSettings(w http.ResponseWriter, r *http.Request) {
 	url("notes_url", &cur.NotesURL, in.NotesURL)
 	secret("notes_token", &cur.NotesToken, in.NotesToken)
 	url("notes_public_url", &cur.NotesPublicURL, in.NotesPublicURL)
+	url("time_url", &cur.TimeURL, in.TimeURL)
+	secret("time_token", &cur.TimeToken, in.TimeToken)
+	url("time_public_url", &cur.TimePublicURL, in.TimePublicURL)
 	if keys["ai_provider"] {
 		if !validAIProvider(in.AIProvider) {
 			bad("AI is automatic, Pocket AI or OpenAI")
@@ -235,6 +239,7 @@ func (s *Server) handlePutSettings(w http.ResponseWriter, r *http.Request) {
 	mode("reader_mode", &cur.ReaderMode, in.ReaderMode)
 	mode("library_mode", &cur.LibraryMode, in.LibraryMode)
 	mode("notes_mode", &cur.NotesMode, in.NotesMode)
+	mode("time_mode", &cur.TimeMode, in.TimeMode)
 	if err := s.store.SaveUserSettings(r.Context(), me.ID, cur); err != nil {
 		s.fail(w, err, "save settings")
 		return
@@ -297,7 +302,11 @@ func (s *Server) handleIntegrationTest(w http.ResponseWriter, r *http.Request) {
 			}
 			conn = &siblingConn{client: pocket.New(base, tok, 15*time.Second), via: modeDirect}
 		} else {
-			conn, err = s.clients(ctx, uid).conn(ctx, a, a.scopes...)
+			scopes := a.scopes
+			if a.slug == appTime.slug {
+				scopes = []string{scopeTimeWrite} // what the timer needs
+			}
+			conn, err = s.clients(ctx, uid).conn(ctx, a, scopes...)
 		}
 		if err == nil {
 			how := "direct connection"
@@ -319,6 +328,14 @@ func (s *Server) handleIntegrationTest(w http.ResponseWriter, r *http.Request) {
 					var ns []pocket.Note
 					ns, err = conn.client.SearchNotes(ctx, "", 50)
 					msg = fmt.Sprintf("Pocket Notes %s, %s, %d recent notes", v, how, len(ns))
+				case "time":
+					var run *pocket.TimeEntry
+					if run, err = conn.client.Timer(ctx); err == nil {
+						msg = fmt.Sprintf("Pocket Time %s, %s, no timer running", v, how)
+						if run != nil {
+							msg = fmt.Sprintf("Pocket Time %s, %s, timer running: %s (%s)", v, how, run.Name(), startedIn(run))
+						}
+					}
 				}
 			}
 		}

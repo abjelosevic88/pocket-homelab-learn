@@ -20,6 +20,8 @@ export interface Settings {
   library_url: string; library_token: string; library_public_url: string
   notes_mode: ConnMode; notes_via: ConnVia; notes_detail: string; notes_open_url: string; notes_configured: boolean
   notes_url: string; notes_token: string; notes_public_url: string
+  time_mode: ConnMode; time_via: ConnVia; time_detail: string; time_open_url: string; time_configured: boolean
+  time_url: string; time_token: string; time_public_url: string
   ai_provider: 'auto' | 'pocket' | 'openai'; ai_pocket_model: string; openai_api_key: string; openai_model: string; openai_base_url: string
   setup_complete: boolean; base_url: string
 }
@@ -64,7 +66,19 @@ export interface Dashboard {
   streak: number; longest_streak: number; due_tomorrow: number; cards: number; decks: number; today: string; come_back?: string
 }
 
-export interface Home { dashboard: Dashboard; decks: Deck[]; heat: Record<string, number>; heat_from: string; forecast: number[] }
+export interface Home { dashboard: Dashboard; decks: Deck[]; heat: Record<string, number>; heat_from: string; forecast: number[]; sessions_today?: { count: number; seconds: number } }
+
+/** A study session: one run on the study screen, or study time logged in Pocket Time. */
+export interface StudySession {
+  id: number; deck_id: number | null; deck_name: string; started_at: string; ended_at: string; last_at: string; date: string
+  duration_s: number; cards: number; again: number; source: string; external_id: string; timer_entry_id: number; title: string
+  kept_by_time: boolean; elapsed_s: number
+}
+
+/** The person's running timer in Pocket Time, as Learn shows it. */
+export interface TimeRunning { id: number; name: string; started_in: string; started_at: string; app: string; app_ref: string; mine: boolean }
+export interface TimeTimer { connected: boolean; running: TimeRunning | null; detail?: string; open_url?: string; session?: StudySession | null }
+export interface StudyStart { session: StudySession | null; conflict?: TimeRunning; time: boolean; detail?: string }
 
 export interface DayStat { day: string; reviews: number; new: number; learn: number; review: number; again: number; mature: number; mature_ok: number; duration_ms: number }
 export interface HourStat { hour: number; reviews: number; ok: number; total: number }
@@ -79,6 +93,7 @@ export interface Stats {
   counts: DeckCounts; forecast: number[]; intervals: { label: string; count: number }[]; hours: HourStat[]
   streak: number; longest_streak: number; lifetime: { reviews: number; duration_ms: number; days: number; notes: number; cards: number; first_day: string }
   hard: StudyCard[]
+  sessions: StudySession[]; session_totals: { count: number; seconds: number }
 }
 
 export interface TagCount { tag: string; count: number }

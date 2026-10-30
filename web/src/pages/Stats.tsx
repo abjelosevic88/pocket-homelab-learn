@@ -4,7 +4,8 @@ import { api, V1 } from '../lib/api'
 import { useApp } from '../lib/app-context'
 import type { Stats as StatsT } from '../lib/types'
 import { plainText, sides } from '../lib/render'
-import { addDays, fmtDate } from '../lib/format'
+import { addDays, fmtDate, fmtTime } from '../lib/format'
+import { minutesText } from '../components/TimeTimer'
 import { Card, Empty, Loading, Segmented, useAsync } from '../components/ui'
 import { Select } from '../components/Select'
 import { Icon } from '../components/icons'
@@ -46,6 +47,16 @@ export default function Stats() {
         <Card title="Cards studied each day" sub={`${t.new} new cards learned`}>
           <LineChart points={data.days.map(d => ({ x: d.day, y: d.reviews }))} kind="bar" zero height={170} goal={settings?.daily_goal || undefined} goalLabel="goal" />
         </Card>
+        {data.sessions.length > 0 && <Card title="Study sessions" sub={`${data.session_totals.count} ${data.session_totals.count === 1 ? 'session' : 'sessions'} in this period, ${minutesText(data.session_totals.seconds)} in all`} flush>
+          <ul className="list session-list">{data.sessions.map(x => (
+            <li key={x.id}><div className="list-row">
+              <span className="ses-when muted small tnum">{fmtDate(x.date, false)} · {fmtTime(new Date(x.started_at))}</span>
+              <span className="grow ellipsis">{x.deck_name || 'All decks'}{x.cards > 0 && <span className="muted small"> · {x.cards} {x.cards === 1 ? 'card' : 'cards'}</span>}</span>
+              {x.kept_by_time && <span className="badge" title={x.source === 'time' ? 'Timed in Pocket Time, which wrote the time here' : 'Timed in Pocket Time; the time arrives here once it is written back'}>Pocket Time</span>}
+              <span className="tnum small">{minutesText(x.duration_s)}</span>
+            </div></li>
+          ))}</ul>
+        </Card>}
         <div className="home-grid">
           <Card title="How much you remember" sub={`Reviews remembered: young cards ${pct(data.retention_young)}, well-known cards ${pct(data.retention_mature)}.`}>
             <LineChart points={ret} height={150} format={v => `${Math.round(v)}%`} goal={desired} goalLabel={`aim ${desired}%`} />

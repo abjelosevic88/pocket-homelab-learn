@@ -8,6 +8,7 @@ import { Card, Empty, Loading, useAsync } from '../components/ui'
 import { Icon } from '../components/icons'
 import { Heatmap } from '../components/Chart'
 import { openCreate, useOnChange } from '../components/Layout'
+import { minutesText } from '../components/TimeTimer'
 
 export function DueCounts({ d, compact = false }: { d: { due_new: number; due_learn: number; due_review: number }; compact?: boolean }) {
   return (
@@ -101,7 +102,7 @@ export default function Today() {
         </div>
         {(d.done_today > 0 || d.goal > 0) && <div className="due-progress">
           <span className="progress"><span style={{ width: `${d.goal > 0 ? goalPct * 100 : Math.min(100, d.done_today / Math.max(1, d.done_today + d.due) * 100)}%` }} /></span>
-          <span className="muted small">{d.done_today} studied today{d.goal > 0 ? ` of your goal of ${d.goal}` : ''} · {d.minutes_today} min</span>
+          <span className="muted small">{d.done_today} studied today{d.goal > 0 ? ` of your goal of ${d.goal}` : ''} · {d.minutes_today} min{data.sessions_today?.count ? ` · ${data.sessions_today.count} ${data.sessions_today.count === 1 ? 'session' : 'sessions'}, ${minutesText(data.sessions_today.seconds)}` : ''}</span>
         </div>}
       </Card>
       <div className="home-grid">

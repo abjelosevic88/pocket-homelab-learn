@@ -14,7 +14,7 @@ import (
 	"github.com/abjelosevic88/pocket-homelab-learn/internal/store"
 )
 
-// ---- Pocket Reader, Pocket Library and Pocket Notes ----
+// ---- Pocket Reader, Pocket Library, Pocket Notes and Pocket Time ----
 //
 // Each person chooses how Learn reaches them: through a Pocket Core app link
 // (Learn asks Core for a five-minute token acting as that person, nothing
@@ -25,6 +25,8 @@ import (
 const (
 	scopeReadingRead = "reading:read"
 	scopeNotesRead   = "notes:read"
+	scopeTimeRead    = "time:read"
+	scopeTimeWrite   = "time:write"
 )
 
 // pocketApp is one sibling Pocket app Learn reads from.
@@ -38,7 +40,8 @@ var (
 	appReader  = pocketApp{"reader", "Pocket Reader", []string{scopeReadingRead}, "Turn the passages you highlighted in articles into flashcards"}
 	appLibrary = pocketApp{"library", "Pocket Library", []string{scopeReadingRead}, "Turn the passages you highlighted in books into flashcards"}
 	appNotes   = pocketApp{"notes", "Pocket Notes", []string{scopeNotesRead}, "Make flashcards from one of your notes"}
-	pocketApps = []pocketApp{appReader, appLibrary, appNotes}
+	appTime    = pocketApp{"time", "Pocket Time", []string{scopeTimeRead, scopeTimeWrite}, "Your study timer is the same timer as in Pocket Time"}
+	pocketApps = []pocketApp{appReader, appLibrary, appNotes, appTime}
 )
 
 func appBySlug(slug string) (pocketApp, bool) {
@@ -125,6 +128,8 @@ func connSettings(st store.Settings, a pocketApp) (mode, url, token, public stri
 		return st.LibraryMode, st.LibraryURL, st.LibraryToken, st.LibraryPublicURL
 	case "notes":
 		return st.NotesMode, st.NotesURL, st.NotesToken, st.NotesPublicURL
+	case "time":
+		return st.TimeMode, st.TimeURL, st.TimeToken, st.TimePublicURL
 	}
 	return "", "", "", ""
 }

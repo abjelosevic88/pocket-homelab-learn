@@ -40,9 +40,26 @@ A note is what you write; it makes one card (`basic`, `type`), two (`reverse`) o
 | Call | What |
 |---|---|
 | `GET /study/next?deck=` | The next card (with the four answers' intervals), what is left today, or `come_back` when only a learning card later today is left |
-| `POST /study/answer` | `{"card_id","rating":1-4,"duration_ms","deck"}` → the review id, the card, the next card |
-| `POST /study/undo` | `{"review_id","deck"}` — take the last answer of a card back |
-| `POST /study/finish` | `{"deck","cards","again","duration_ms"}` — publishes `learn.session_finished` |
+| `POST /study/start` | `{"deck","switch"}` → the study session (`session`), or `conflict`: the timer running in Pocket Time (`switch:true` stops it and starts this) |
+| `POST /study/answer` | `{"card_id","rating":1-4,"duration_ms","deck","session_id"}` → the review id, the card, the next card, the session |
+| `POST /study/undo` | `{"review_id","deck","session_id"}` — take the last answer of a card back |
+| `POST /study/stop` | `{"session_id"}` — end the session (the Stop button, leaving the screen) |
+| `POST /study/finish` | `{"deck","cards","again","duration_ms","session_id"}` — ends the session, publishes `learn.session_finished` |
+| `GET /time/timer?session=` | The timer running in Pocket Time (`running`, `mine`), and that session's state |
+| `POST /time/timer/stop` | `{"id"}` — stop that timer in Pocket Time (only if it is still the one running) |
+
+A **study session** runs from the first card on the study screen to finishing, Stop or leaving it; 15 minutes without an answer end it at the last answer. Without Pocket Time Learn records it itself (`source` `app`). With Pocket Time connected (Settings → Connected apps) the study timer is the person's one timer there: the session starts it (`app_ref` `deck:<id>`), ending it stops it, and Pocket Time writes the time back through `POST /worklog` into the same session — never twice.
+
+## Worklog (for Pocket Time)
+
+The contract in pocket-homelab-time `docs/worklog.md`. Refs are `deck:<id>` (or `deck:all`).
+
+| Call | What |
+|---|---|
+| `GET /worklog?from=&to=` | Your study sessions in a period: `{"entries":[{"id","title","started_at","ended_at","date","duration_s","ref","label","url","source","external_id"}]}` |
+| `GET /worklog/items?q=` | The decks to log time for, studied lately first |
+| `POST /worklog` | `{"ref","title","started_at","ended_at","date","duration_s","external_id"}` → `{"id","url"}`; the same `external_id` again updates it |
+| `DELETE /worklog/{id}` | Remove a session the caller logged (never Learn's own) |
 
 ## Import, export, media
 
@@ -67,4 +84,4 @@ A note is what you write; it makes one card (`basic`, `type`), two (`reverse`) o
 
 ## Pocket Core links
 
-Offers `learn:read` (dashboard, stats, decks, day — never card content) and `learn:write` (add notes; change or delete only notes that app added). Uses `reading:read` from Pocket Reader and Pocket Library and `notes:read` from Pocket Notes. Publishes `learn.session_finished`, `learn.all_done`, `learn.cards_added`, `learn.streak_reached`.
+Offers `learn:read` (dashboard, stats, decks, day — never card content), `learn:write` (add notes; change or delete only notes that app added), `worklog:read` (study sessions, the decks to log for) and `worklog:write` (log study time; change or remove only what that app logged). Uses `reading:read` from Pocket Reader and Pocket Library, `notes:read` from Pocket Notes and `time:read`/`time:write` from Pocket Time (the study timer). Publishes `learn.session_finished`, `learn.all_done`, `learn.cards_added`, `learn.streak_reached`.

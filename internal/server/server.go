@@ -157,7 +157,8 @@ func (s *Server) ownerReady(ctx context.Context, owner int64) error {
 }
 
 // janitor runs the background work: every minute the reminders, the streak
-// nudge and the weekly report (each at the person's own time), every hour
+// nudge and the weekly report (each at the person's own time) and ending the
+// study sessions nobody answered in for 15 minutes, every hour
 // the temp files of interrupted imports.
 func (s *Server) janitor(ctx context.Context) {
 	minute := time.NewTicker(time.Minute)
@@ -170,6 +171,7 @@ func (s *Server) janitor(ctx context.Context) {
 			return
 		case <-minute.C:
 			s.pushes(ctx)
+			s.closeIdleSessions(ctx)
 		case <-hour.C:
 			s.cleanTemp()
 			_ = s.store.PurgeSessions(ctx)

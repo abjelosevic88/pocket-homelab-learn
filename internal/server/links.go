@@ -19,6 +19,8 @@ import (
 var linkOffers = []core.Offer{
 	{Scope: "learn:read", Name: "See what you study", Description: "Read your decks, how many cards are due, what you studied each day and your streak — for your journal, dashboards and reminders. Never the cards themselves."},
 	{Scope: "learn:write", Name: "Add flashcards", Description: "Add flashcards to your decks (a passage you highlighted, a word from a note). It may change or remove only the cards it added itself."},
+	{Scope: "worklog:read", Name: "See your study sessions", Description: "See when you studied which deck and for how long — for Pocket Time, your journal and dashboards. Never the cards themselves."},
+	{Scope: "worklog:write", Name: "Log study time", Description: "Log time you studied a deck (a timer stopped in Pocket Time) as a study session. It may change or remove only the sessions it logged itself."},
 }
 
 type linkRoute struct {
@@ -35,6 +37,9 @@ var linkRoutes = []linkRoute{
 	{"GET", regexp.MustCompile(`^/api/v1/decks/\d+$`), "learn:read"},
 	{"POST", regexp.MustCompile(`^/api/v1/notes$`), "learn:write"},
 	{"GET PUT DELETE", regexp.MustCompile(`^/api/v1/notes/\d+$`), "learn:write"},
+	{"GET", regexp.MustCompile(`^/api/v1/worklog(/items)?$`), "worklog:read"},
+	{"POST", regexp.MustCompile(`^/api/v1/worklog$`), "worklog:write"},
+	{"DELETE", regexp.MustCompile(`^/api/v1/worklog/[^/]+$`), "worklog:write"},
 }
 
 var errLinkScope = errors.New("outside the link's scope")

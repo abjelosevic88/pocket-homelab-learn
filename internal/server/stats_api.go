@@ -86,7 +86,10 @@ func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
 		heat[x.Day] = x.Reviews
 	}
 	fc, _ := s.forecast(ctx, uid, ck, 7)
-	writeJSON(w, http.StatusOK, map[string]any{"dashboard": d, "decks": decks, "heat": heat, "heat_from": from, "forecast": fc})
+	today := store.LocalDate(s.now())
+	_, n, secs := s.sessionsList(ctx, uid, today, today, 0, 0)
+	writeJSON(w, http.StatusOK, map[string]any{"dashboard": d, "decks": decks, "heat": heat, "heat_from": from, "forecast": fc,
+		"sessions_today": map[string]any{"count": n, "seconds": secs}})
 }
 
 // forecast counts the cards due on each of the next n study days (today includes overdue ones).
@@ -238,6 +241,11 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 		return round2(float64(ok) / float64(all))
 	}
 	young, youngOK := sum.Review-sum.Mature, (sum.Review-sum.Again)-sum.MatureOK
+	sessTo := to // sessions go by calendar date; the study day may still be yesterday's
+	if d := store.LocalDate(s.now()); d > sessTo {
+		sessTo = d
+	}
+	sessions, sessionCount, sessionSecs := s.sessionsList(ctx, uid, from, sessTo, deck, 12)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"from": from, "to": to, "days": series, "heat": heat, "heat_from": heatFrom,
 		"totals": map[string]any{"reviews": sum.Reviews, "new": sum.New, "minutes": int(sum.DurationMS / 60000), "days_studied": studied, "days": len(series),
@@ -248,6 +256,7 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 		"desired_retention": st.Retention,
 		"counts":            counts, "forecast": fc, "intervals": buckets, "hours": hours,
 		"streak": cur, "longest_streak": best, "lifetime": life, "hard": hard,
+		"sessions": sessions, "session_totals": map[string]any{"count": sessionCount, "seconds": sessionSecs},
 	})
 }
 
