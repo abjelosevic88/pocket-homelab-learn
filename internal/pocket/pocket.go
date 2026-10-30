@@ -230,11 +230,13 @@ func (e *TimeEntry) Name() string {
 	return "untitled"
 }
 
-// TimerStart is what starts a timer for something in Learn. App names Learn
-// on a direct connection (a person's token); on a Core link Time takes the
-// acting app instead.
+// TimerStart is what starts a timer for something in Learn. App and Source
+// name Learn on a direct connection (a person's token): without app Time
+// drops the item, without source it shows as started in Pocket Time. On a
+// Core link Time sets both from the acting app.
 type TimerStart struct {
 	App      string `json:"app"`
+	Source   string `json:"source"`
 	AppRef   string `json:"app_ref"`
 	AppLabel string `json:"app_label"`
 	AppURL   string `json:"app_url"`

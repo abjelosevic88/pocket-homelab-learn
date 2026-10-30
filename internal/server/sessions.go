@@ -275,7 +275,7 @@ func (s *Server) startRun(ctx context.Context, uid int64, deck *store.Deck, swit
 			ours[x.TimerEntryID] = true
 		}
 	}
-	start := pocket.TimerStart{App: "learn", AppRef: ref, AppLabel: label, AppURL: url, Deliver: true, Switch: switchTimer}
+	start := pocket.TimerStart{App: "learn", Source: "learn", AppRef: ref, AppLabel: label, AppURL: url, Deliver: true, Switch: switchTimer}
 	running, err := sib.client.StartTimer(ctx, start)
 	var ce *pocket.ConflictError
 	if errors.As(err, &ce) && ce.Running != nil {

@@ -230,7 +230,7 @@ func TestStudyTimerInPocketTime(t *testing.T) {
 	if st["time"] != true || num(x, "timer_entry_id") != 1 || len(ft.starts) != 1 {
 		t.Fatalf("start = %v", st)
 	}
-	if s0 := ft.starts[0]; s0["app_ref"] != fmt.Sprintf("deck:%.0f", deck) || s0["app_label"] != "Capitals" || s0["app_url"] != fmt.Sprintf("/decks/%.0f", deck) || s0["deliver"] != true {
+	if s0 := ft.starts[0]; s0["app_ref"] != fmt.Sprintf("deck:%.0f", deck) || s0["app_label"] != "Capitals" || s0["app_url"] != fmt.Sprintf("/decks/%.0f", deck) || s0["deliver"] != true || s0["app"] != "learn" || s0["source"] != "learn" {
 		t.Fatalf("timer start = %v", s0)
 	}
 	sid := num(x, "id")
