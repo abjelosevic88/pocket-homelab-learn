@@ -451,7 +451,6 @@ td.col-back { background: color-mix(in srgb, var(--dc-review) 10%, transparent);
 .time-pill { display: inline-flex; align-items: center; gap: 6px; height: 30px; max-width: 300px; padding: 0 4px 0 10px; margin-right: 4px; border-radius: 999px; background: var(--accent-soft); color: var(--text); font-size: 13px; }
 .time-pill-ico { color: var(--accent); flex-shrink: 0; }
 .time-pill-name { min-width: 0; color: inherit; text-decoration: none; font-weight: 500; }
-a.time-pill-name:hover { text-decoration: underline; }
 .time-pill-t { color: var(--text-2); white-space: nowrap; }
 .time-pill-stop { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; border: 0; background: var(--surface); color: var(--text); cursor: pointer; flex-shrink: 0; }
 .time-pill-stop:hover { background: var(--danger-soft); color: var(--danger); }
