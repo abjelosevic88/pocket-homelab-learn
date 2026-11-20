@@ -23,6 +23,19 @@ var linkOffers = []core.Offer{
 	{Scope: "worklog:write", Name: "Log study time", Description: "Log time you studied a deck (a timer stopped in Pocket Time) as a study session. It may change or remove only the sessions it logged itself."},
 }
 
+// portable is what Pocket Move may copy out and bring in for a person
+// (docs/move.md in pocket-homelab-core); Register adds move:export/import.
+var portable = &core.Portable{
+	Exports: []core.PortableExport{
+		{Path: "/api/v1/export.json", File: "learn.json", Kind: core.KindPocket, Title: "Your decks and cards with where each card stands, and your review history"},
+		{Path: "/api/v1/export.csv", File: "cards.csv", Kind: core.KindCSV, Title: "Every card as a table: deck, front, back, tags, when it is next due"},
+	},
+	Imports: []core.PortableImport{
+		{Path: "/api/v1/import", Kind: core.KindPocket, ContentType: "application/json", MaxBytes: 32 << 20, Title: "Adds the decks and cards with their progress and history; cards you already have are left alone"},
+		{Path: "/api/v1/import/anki", Kind: "anki-apkg", Form: "file", MaxBytes: 1 << 30, Title: "Adds an Anki deck (.apkg or .colpkg) with its pictures, sounds and progress; a second run adds nothing"},
+	},
+}
+
 type linkRoute struct {
 	methods string
 	path    *regexp.Regexp
@@ -46,6 +59,9 @@ var errLinkScope = errors.New("outside the link's scope")
 
 // linkAllows reports whether a link token with these scopes may make this request.
 func linkAllows(scopes []string, r *http.Request) bool {
+	if portable.LinkAllows(scopes, r) {
+		return true
+	}
 	for _, lr := range linkRoutes {
 		if !strings.Contains(" "+lr.methods+" ", " "+r.Method+" ") || !lr.path.MatchString(r.URL.Path) {
 			continue

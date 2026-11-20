@@ -69,6 +69,7 @@ The contract in pocket-homelab-time `docs/worklog.md`. Refs are `deck:<id>` (or 
 | `POST /import/csv` | `{"text","delimiter":"auto\|,\|;\|tab","header","kind","front":0,"back":1,"extra":-1,"tags_col":-1,"tags","deck_id" or "deck","dry_run"}` |
 | `GET /export.json[?deck=]`, `POST /import` | Everything of yours, re-importable |
 | `GET /export.csv` | The cards as CSV |
+| `GET /pocket/portable` | What Pocket Move can copy out (your cards and history) and bring in (that export, Anki packages): exports under the link scope `move:export`, imports under `move:import` |
 | `POST /media` (multipart `file`), `GET /media/{name}` | Pictures and sounds on cards |
 
 ## Other Pocket apps and AI
